@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/web-logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/web-logo.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.super-yu.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="TensorRT插件零基础教程（2）（基于TensorRT8）一、写在前面引言接着上一篇，本篇说明两个重要的类 nvinfer1::IPluginV2DynamicExt 和 IPluginCreator 的成员函数以及变量的定义，这两个重要的类实现之后，就基本完成了插件的编写。 读完本篇，你将获得具体编写插件类的细节。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TensorRT插件基础教程基于TensorRT8[2]">
+<meta property="og:url" content="https://www.super-yu.com/2022/08/09/TensorRT%E6%8F%92%E4%BB%B6%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B%E5%9F%BA%E4%BA%8ETensorRT8-2/index.html">
+<meta property="og:site_name" content="Super雨">
+<meta property="og:description" content="TensorRT插件零基础教程（2）（基于TensorRT8）一、写在前面引言接着上一篇，本篇说明两个重要的类 nvinfer1::IPluginV2DynamicExt 和 IPluginCreator 的成员函数以及变量的定义，这两个重要的类实现之后，就基本完成了插件的编写。 读完本篇，你将获得具体编写插件类的细节。">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-08-09T07:53:39.000Z">
+<meta property="article:modified_time" content="2022-08-09T07:54:55.978Z">
+<meta property="article:author" content="Lin Yu">
+<meta property="article:tag" content="TensorRT插件">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.super-yu.com/2022/08/09/TensorRT%E6%8F%92%E4%BB%B6%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B%E5%9F%BA%E4%BA%8ETensorRT8-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>TensorRT插件基础教程基于TensorRT8[2] | Super雨</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Super雨</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">其实没有那么多观众，大胆地自由地生活！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="https://www.super-yu.com/2022/08/09/TensorRT%E6%8F%92%E4%BB%B6%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B%E5%9F%BA%E4%BA%8ETensorRT8-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/logo-yu.gif">
+      <meta itemprop="name" content="Lin Yu">
+      <meta itemprop="description" content="深度学习 目标跟踪 神经网络 TensorRT yolo">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Super雨">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          TensorRT插件基础教程基于TensorRT8[2]
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-08-09 07:53:39 / Modified: 07:54:55" itemprop="dateCreated datePublished" datetime="2022-08-09T07:53:39+00:00">2022-08-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C/" itemprop="url" rel="index"><span itemprop="name">神经网络</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="TensorRT插件零基础教程（2）（基于TensorRT8）"><a href="#TensorRT插件零基础教程（2）（基于TensorRT8）" class="headerlink" title="TensorRT插件零基础教程（2）（基于TensorRT8）"></a>TensorRT插件零基础教程（2）（基于TensorRT8）</h1><h2 id="一、写在前面"><a href="#一、写在前面" class="headerlink" title="一、写在前面"></a>一、写在前面</h2><h4 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h4><p>接着上一篇，本篇说明两个重要的类 <code>nvinfer1::IPluginV2DynamicExt</code> 和 <code>IPluginCreator</code> 的成员函数以及变量的定义，这两个重要的类实现之后，就基本完成了插件的编写。</p>
+<h4 id="读完本篇，你将获得"><a href="#读完本篇，你将获得" class="headerlink" title="读完本篇，你将获得"></a>读完本篇，你将获得</h4><p>具体编写插件类的细节。</p>
+<span id="more"></span>
+
+<h2 id="二、步入正题"><a href="#二、步入正题" class="headerlink" title="二、步入正题"></a>二、步入正题</h2><h4 id="1、定义派生的插件类"><a href="#1、定义派生的插件类" class="headerlink" title="1、定义派生的插件类"></a>1、定义派生的插件类</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">GroupNormalizationPlugin</span> <span class="keyword">final</span> : <span class="keyword">public</span> nvinfer1::IPluginV2DynamicExt</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">GroupNormalizationPluginCreator</span> : <span class="keyword">public</span> IPluginCreator</span><br></pre></td></tr></table></figure>
+
+<p>final 表示这是最后一层继承，不允许再基于 <code>GroupNormalizationPlugin</code> 生成新的类。</p>
+<h4 id="2、两个插件内具体成员的定义"><a href="#2、两个插件内具体成员的定义" class="headerlink" title="2、两个插件内具体成员的定义"></a>2、两个插件内具体成员的定义</h4><p>一般有两个构造函数，分别用于为插件内参数初始化、反序列化插件参数，由于在 C++ 里边，类有一个默认的构造函数，对于插件来说，显然这个默认的构造函数没有意义，所以手动使用 <code>delete</code> 保留字禁止其生成默认构造函数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">GroupNormalizationPlugin</span>(<span class="type">float</span> epsilon, <span class="type">const</span> <span class="type">int</span> nbGroups);</span><br><span class="line"></span><br><span class="line"><span class="built_in">GroupNormalizationPlugin</span>(<span class="type">const</span> <span class="type">void</span>* data, <span class="type">size_t</span> length);</span><br><span class="line"></span><br><span class="line"><span class="built_in">GroupNormalizationPlugin</span>() = <span class="keyword">delete</span>;</span><br></pre></td></tr></table></figure>
+
+<p>对于 <code>GroupNormalizationPlugin</code> 这个特定的插件，还有一些自定义的参数，在类内定义时用 private 修饰：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//通用内容</span></span><br><span class="line"><span class="type">const</span> <span class="type">char</span>* mPluginNamespace;</span><br><span class="line">std::string mNamespace;</span><br><span class="line"></span><br><span class="line"><span class="comment">//以下是自定义的，按需定义、使用</span></span><br><span class="line"><span class="type">float</span> mEpsilon;</span><br><span class="line"><span class="type">int</span> mNbGroups;</span><br><span class="line"><span class="type">int</span> mChannelVolume;</span><br><span class="line"></span><br><span class="line">cudnnHandle_t _cudnn_handle; <span class="comment">//这个插件用到了cuDNN库，需要定义这些内容</span></span><br><span class="line">cudnnTensorDescriptor_t desc, bnDesc; <span class="comment">// describes input and output</span></span><br><span class="line"><span class="type">void</span>* bnScale;</span><br><span class="line"><span class="type">void</span>* bnBias;</span><br></pre></td></tr></table></figure>
+
+<p>具体实现如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">GroupNormalizationPlugin::<span class="built_in">GroupNormalizationPlugin</span>(<span class="type">float</span> epsilon, <span class="type">int</span> nbGroups)</span><br><span class="line">    : <span class="built_in">mEpsilon</span>(epsilon),</span><br><span class="line">      <span class="built_in">mNbGroups</span>(nbGroups) <span class="comment">//用初始化列表初始化参数</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">//函数体内容按需写</span></span><br><span class="line">    <span class="comment">// Number of groups should be positive</span></span><br><span class="line">    <span class="built_in">assert</span>(nbGroups &gt; <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//用于反序列化参数，即从引擎文件里读出保存的参数</span></span><br><span class="line">GroupNormalizationPlugin::<span class="built_in">GroupNormalizationPlugin</span>(<span class="type">const</span> <span class="type">void</span>* data, <span class="type">size_t</span> length)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Deserialize in the same order as serialization</span></span><br><span class="line">    <span class="built_in">deserialize_value</span>(&amp;data, &amp;length, &amp;mEpsilon); <span class="comment">//这两个变量已经定义过了</span></span><br><span class="line">    <span class="built_in">deserialize_value</span>(&amp;data, &amp;length, &amp;mNbGroups);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>除了这两个构造函数以及一些自定义参数，其他的成员函数具有统一的格式。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回插件的名字，GROUP_NORM_NAME已经定义过了，很明确</span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">GroupNormalizationPlugin::getPluginType</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> GROUP_NORM_NAME;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回插件版本，已经定义过了，很明确，默认写1</span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">GroupNormalizationPlugin::getPluginVersion</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> GROUP_NORM_VERSION;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//获取该插件的输出数量</span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">GroupNormalizationPlugin::getNbOutputs</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//从输入张量的维数得到计算输出张量维数的表达式，这个维度要用DimsExprs类表示</span></span><br><span class="line"><span class="function">nvinfer1::DimsExprs <span class="title">GroupNormalizationPlugin::getOutputDimensions</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">int</span> index, <span class="type">const</span> nvinfer1::DimsExprs* inputs, <span class="type">int</span> nbInputs, nvinfer1::IExprBuilder&amp; exprBuilder)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// Input (from previous layer), scale and bias are the three inputs to the plugin.</span></span><br><span class="line">    <span class="built_in">assert</span>(nbInputs == <span class="number">3</span>); <span class="comment">//检验传入参数的合法性</span></span><br><span class="line">    <span class="built_in">assert</span>(index == <span class="number">0</span>);  <span class="comment">//检验传入参数的合法性</span></span><br><span class="line">    <span class="function">nvinfer1::DimsExprs <span class="title">output</span><span class="params">(inputs[<span class="number">0</span>])</span></span>; <span class="comment">//由于在本插件里，输出的维数与输入的维数相同，直接实例化一个DimsExprs，直接返回即可</span></span><br><span class="line">    <span class="keyword">return</span> output;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DimsExprs 的成员如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">DimsExprs</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int32_t</span> nbDims;                       <span class="comment">//!&lt; The number of dimensions.</span></span><br><span class="line">    <span class="type">const</span> IDimensionExpr* d[Dims::MAX_DIMS]; <span class="comment">//!&lt; The extent of each dimension.</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//将插件对象附加到执行上下文，并授予插件访问某些上下文资源的权限</span></span><br><span class="line"><span class="comment">//此插件用到了cuDNN来实现插件的运算任务，该函数里的内容是为了配合cuDNN而存在</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::attachToContext</span><span class="params">(cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    _cudnn_handle = cudnnContext;</span><br><span class="line">    <span class="built_in">cudnnCreateTensorDescriptor</span>(&amp;desc);</span><br><span class="line">    <span class="built_in">cudnnCreateTensorDescriptor</span>(&amp;bnDesc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//将插件对象从其执行上下文中分离出来</span></span><br><span class="line"><span class="comment">//此插件用到了cuDNN来实现插件的运算任务，该函数里的内容是为了配合cuDNN而存在</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::detachFromContext</span><span class="params">()</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">cudnnDestroyTensorDescriptor</span>(desc);</span><br><span class="line">    <span class="built_in">cudnnDestroyTensorDescriptor</span>(bnDesc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下边的 enqueue 函数是重点，插件的实际运算函数从这里调用，因此用户需要仔细实现。此函数调用了 cuDNN 库里的函数，当然用户也可以自定义 CUDA 函数实现运算，留好接口，同样是在此处调用。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">GroupNormalizationPlugin::enqueue</span><span class="params">(<span class="type">const</span> nvinfer1::PluginTensorDesc* inputDesc,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> nvinfer1::PluginTensorDesc* outputDesc, <span class="type">const</span> <span class="type">void</span>* <span class="type">const</span>* inputs, <span class="type">void</span>* <span class="type">const</span>* outputs, <span class="type">void</span>* workspace,</span></span></span><br><span class="line"><span class="params"><span class="function">    cudaStream_t stream)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// Get the input dimensions</span></span><br><span class="line">    nvinfer1::Dims input_dims = inputDesc[<span class="number">0</span>].dims;</span><br><span class="line">    <span class="type">int</span> batchSize = input_dims.d[<span class="number">0</span>];</span><br><span class="line">    <span class="type">int</span> nbChannels = input_dims.d[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Calculate size of each group</span></span><br><span class="line">    <span class="type">int</span> groupSize = nbChannels / mNbGroups;</span><br><span class="line"></span><br><span class="line">    mChannelVolume = std::<span class="built_in">accumulate</span>(input_dims.d + <span class="number">2</span>, input_dims.d + inputDesc[<span class="number">0</span>].dims.nbDims, <span class="number">1</span>, std::<span class="built_in">multiplies</span>&lt;<span class="type">int</span>&gt;());</span><br><span class="line"></span><br><span class="line">    <span class="built_in">CHECK_CUDNN</span>(<span class="built_in">cudnnSetTensor4dDescriptor</span>(desc, <span class="comment">// descriptor</span></span><br><span class="line">        CUDNN_TENSOR_NCHW,                 <span class="comment">// tensor format</span></span><br><span class="line">        CUDNN_DATA_FLOAT,                  <span class="comment">// type</span></span><br><span class="line">        <span class="number">1</span>,                                 <span class="comment">// Batchsize</span></span><br><span class="line">        batchSize * mNbGroups,             <span class="comment">// Channels</span></span><br><span class="line">        groupSize,                         <span class="comment">// Height</span></span><br><span class="line">        mChannelVolume                     <span class="comment">// Width</span></span><br><span class="line">        ));</span><br><span class="line"></span><br><span class="line">    <span class="built_in">CHECK_CUDNN</span>(<span class="built_in">cudnnDeriveBNTensorDescriptor</span>(bnDesc, desc, CUDNN_BATCHNORM_SPATIAL));</span><br><span class="line">    <span class="built_in">CHECK_CUDNN</span>(<span class="built_in">cudnnSetStream</span>(_cudnn_handle, stream));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Reshape the data according in the cudnnSetTensor4dDescriptor.</span></span><br><span class="line">    <span class="type">float</span> a = <span class="number">1.F</span>;</span><br><span class="line">    <span class="type">float</span> b = <span class="number">0.F</span>;</span><br><span class="line">    <span class="built_in">CHECK_CUDNN</span>(<span class="built_in">cudnnBatchNormalizationForwardTraining</span>(_cudnn_handle, <span class="comment">// handle</span></span><br><span class="line">        CUDNN_BATCHNORM_SPATIAL,                                      <span class="comment">// BatchNormMode_t, try also non persistent</span></span><br><span class="line">        &amp;a,                                                           <span class="comment">//</span></span><br><span class="line">        &amp;b,                                                           <span class="comment">//</span></span><br><span class="line">        desc,                                                         <span class="comment">// in/out descriptor</span></span><br><span class="line">        inputs[<span class="number">0</span>],                                                    <span class="comment">// input</span></span><br><span class="line">        desc,                                                         <span class="comment">// in/out descriptor</span></span><br><span class="line">        outputs[<span class="number">0</span>],                                                   <span class="comment">// output</span></span><br><span class="line">        bnDesc,                                                       <span class="comment">//</span></span><br><span class="line">        bnScale,                                                      <span class="comment">// 1</span></span><br><span class="line">        bnBias,                                                       <span class="comment">// 0</span></span><br><span class="line">        <span class="number">0.0</span>,                                                          <span class="comment">// exponential average factor</span></span><br><span class="line">        <span class="literal">nullptr</span>,                                                      <span class="comment">// resultRunningMean</span></span><br><span class="line">        <span class="literal">nullptr</span>,                                                      <span class="comment">// resultRunningVar</span></span><br><span class="line">        mEpsilon,                                                     <span class="comment">//  eps</span></span><br><span class="line">        <span class="literal">nullptr</span>,                                                      <span class="comment">// resultSaveMean</span></span><br><span class="line">        <span class="literal">nullptr</span>                                                       <span class="comment">// resultSaveInvVar</span></span><br><span class="line">        ));</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span>* output = <span class="built_in">static_cast</span>&lt;<span class="type">float</span>*&gt;(outputs[<span class="number">0</span>]);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">scaleShiftChannelsInplace</span>(output, batchSize, nbChannels, mChannelVolume, <span class="built_in">static_cast</span>&lt;<span class="type">const</span> <span class="type">float</span>*&gt;(inputs[<span class="number">2</span>]), <span class="built_in">static_cast</span>&lt;<span class="type">const</span> <span class="type">float</span>*&gt;(inputs[<span class="number">1</span>]), stream); <span class="comment">//mBetaDev, mGammaDev,    </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//获取序列化之后的参数总长度</span></span><br><span class="line"><span class="function"><span class="type">size_t</span> <span class="title">GroupNormalizationPlugin::getSerializationSize</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sizeof</span>(mNbGroups) + <span class="built_in">sizeof</span>(mEpsilon);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//将参数序列化写入指定的buffer</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::serialize</span><span class="params">(<span class="type">void</span>* buffer)</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">serialize_value</span>(&amp;buffer, mEpsilon);</span><br><span class="line">    <span class="built_in">serialize_value</span>(&amp;buffer, mNbGroups);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//如果插件支持 pos 索引的输入/输出的格式和数据类型，则返回 true</span></span><br><span class="line"><span class="comment">//inOut指的是插件的输入张量或者输出张量的描述，通常判断提供过来的输入或者输出format以及type受不受插件支持</span></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">GroupNormalizationPlugin::supportsFormatCombination</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">int</span> pos, <span class="type">const</span> nvinfer1::PluginTensorDesc* inOut, <span class="type">int</span> nbInputs, <span class="type">int</span> nbOutputs)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(inOut &amp;&amp; pos &lt; (nbInputs + nbOutputs));</span><br><span class="line">    <span class="keyword">return</span> ((inOut[pos].type == nvinfer1::DataType::kFLOAT) &amp;&amp; inOut[pos].format == nvinfer1::PluginFormat::kLINEAR</span><br><span class="line">        &amp;&amp; inOut[pos].type == inOut[<span class="number">0</span>].type); </span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//释放插件层初始化过程中获得的资源，由于cpu并不主动释放gpu端的资源，所以要手动释放</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::terminate</span><span class="params">()</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">cudaFree</span>(bnScale);</span><br><span class="line">    <span class="built_in">cudaFree</span>(bnBias);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//销毁插件</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::destroy</span><span class="params">()</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// This gets called when the network containing plugin is destroyed</span></span><br><span class="line">    <span class="keyword">delete</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//克隆插件对象。这也会复制内部插件参数，并返回一个带有这些参数的新插件对象</span></span><br><span class="line"><span class="function">IPluginV2DynamicExt* <span class="title">GroupNormalizationPlugin::clone</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">auto</span>* plugin = <span class="keyword">new</span> <span class="built_in">GroupNormalizationPlugin</span>(mEpsilon, mNbGroups);</span><br><span class="line">    plugin-&gt;<span class="built_in">setPluginNamespace</span>(mPluginNamespace); <span class="comment">//必写</span></span><br><span class="line">    <span class="keyword">return</span> plugin;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建插件的准备工作，例如分配空间，数据传输等。</span></span><br><span class="line"><span class="comment">//configurePlugin ()可以在构建和执行阶段中多次调用。构建阶段发生在 initialize ()被调用之前，并且只发生在 IBuilder 创建引擎的过程中。执行阶段发生在 initialize ()被调用之后，并且在 IBuilder 创建引擎和 IExecutionContext 执行引擎期间发生。</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::configurePlugin</span><span class="params">(<span class="type">const</span> nvinfer1::DynamicPluginTensorDesc* in, <span class="type">int</span> nbInputs,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> nvinfer1::DynamicPluginTensorDesc* out, <span class="type">int</span> nbOutputs)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; nbInputs; i++)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; in[<span class="number">0</span>].desc.dims.nbDims; j++)</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="comment">// Do not support dynamic dimensions</span></span><br><span class="line">        <span class="built_in">assert</span>(in[<span class="number">0</span>].desc.dims.d[j] != <span class="number">-1</span>);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> batchSize = in[<span class="number">0</span>].desc.dims.d[<span class="number">0</span>];</span><br><span class="line">    <span class="type">int</span> nbChannels = in[<span class="number">0</span>].desc.dims.d[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Allocate device memory and initialize scale and bias values</span></span><br><span class="line">    <span class="built_in">cudaMalloc</span>(&amp;bnScale, batchSize * nbChannels * <span class="built_in">sizeof</span>(<span class="type">float</span>));</span><br><span class="line">    <span class="built_in">cudaMalloc</span>(&amp;bnBias, batchSize * nbChannels * <span class="built_in">sizeof</span>(<span class="type">float</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// allot ones and zeros to bn parameters</span></span><br><span class="line">    <span class="function">std::vector&lt;<span class="type">float</span>&gt; <span class="title">ones</span><span class="params">(nbChannels, <span class="number">1.F</span>)</span></span>;</span><br><span class="line">    <span class="built_in">cudaMemcpy</span>(bnScale, ones.<span class="built_in">data</span>(), nbChannels * <span class="built_in">sizeof</span>(<span class="type">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line"></span><br><span class="line">    <span class="function">std::vector&lt;<span class="type">float</span>&gt; <span class="title">zeroes</span><span class="params">(nbChannels, <span class="number">0.F</span>)</span></span>;</span><br><span class="line">    <span class="built_in">cudaMemcpy</span>(bnBias, zeroes.<span class="built_in">data</span>(), nbChannels * <span class="built_in">sizeof</span>(<span class="type">float</span>), cudaMemcpyHostToDevice);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//在请求的索引处返回插件输出的 DataType</span></span><br><span class="line"><span class="comment">//默认行为应该是返回第一个输入的类型，如果层没有输入，则返回 DataType: : : kFLOAT</span></span><br><span class="line"><span class="function">nvinfer1::DataType <span class="title">GroupNormalizationPlugin::getOutputDataType</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">int</span> index, <span class="type">const</span> nvinfer1::DataType* inputTypes, <span class="type">int</span> nbInputs)</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(inputTypes &amp;&amp; nbInputs &gt; <span class="number">0</span> &amp;&amp; index == <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> inputTypes[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//获取插件/也可以说为层所需的工作空间</span></span><br><span class="line"><span class="comment">//TODO 这里所说的工作空间暂不明确到底是什么，configurePlugin函数已经分配好了空间</span></span><br><span class="line"><span class="function"><span class="type">size_t</span> <span class="title">GroupNormalizationPlugin::getWorkspaceSize</span><span class="params">(<span class="type">const</span> nvinfer1::PluginTensorDesc* inputs, <span class="type">int</span> nbInputs,</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> nvinfer1::PluginTensorDesc* outputs, <span class="type">int</span> nbOutputs)</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//设置此插件对象所属的名称空间。理想情况下，来自同一个插件库的所有插件对象应该具有相同的名称空间。</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPlugin::setPluginNamespace</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* libNamespace)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    mPluginNamespace = libNamespace;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//获取插件的命名空间</span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">GroupNormalizationPlugin::getPluginNamespace</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> mPluginNamespace;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述所有函数虽然比较繁多，但是需要认真琢磨的也为数不多，下面的 GroupNormalizationPluginCreator 类也是如此：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//用于初始化参数的构造函数</span></span><br><span class="line">GroupNormalizationPluginCreator::<span class="built_in">GroupNormalizationPluginCreator</span>()</span><br><span class="line">&#123;</span><br><span class="line">    mPluginAttributes.<span class="built_in">clear</span>();</span><br><span class="line">    mPluginAttributes.<span class="built_in">emplace_back</span>(<span class="built_in">PluginField</span>(<span class="string">&quot;eps&quot;</span>, <span class="literal">nullptr</span>, PluginFieldType::kFLOAT32, <span class="number">1</span>));</span><br><span class="line">    mPluginAttributes.<span class="built_in">emplace_back</span>(<span class="built_in">PluginField</span>(<span class="string">&quot;num_groups&quot;</span>, <span class="literal">nullptr</span>, PluginFieldType::kINT32, <span class="number">1</span>));</span><br><span class="line"></span><br><span class="line">    mFC.nbFields = mPluginAttributes.<span class="built_in">size</span>();</span><br><span class="line">    mFC.fields = mPluginAttributes.<span class="built_in">data</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//以下函数表意明确，结构简单，照猫画虎即可，但不能省略</span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">GroupNormalizationPluginCreator::getPluginName</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> GROUP_NORM_NAME;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">GroupNormalizationPluginCreator::getPluginVersion</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> GROUP_NORM_VERSION;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">const</span> PluginFieldCollection* <span class="title">GroupNormalizationPluginCreator::getFieldNames</span><span class="params">()</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;mFC;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">GroupNormalizationPluginCreator::getPluginNamespace</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> mNamespace.<span class="built_in">c_str</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">GroupNormalizationPluginCreator::setPluginNamespace</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* libNamespace)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    mNamespace = libNamespace;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//用于创建插件的函数，从PluginFieldCollection中解析出插件的fields(即为保存有插件信息的内存空间）</span></span><br><span class="line"><span class="function">IPluginV2DynamicExt* <span class="title">GroupNormalizationPluginCreator::createPlugin</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* name, <span class="type">const</span> PluginFieldCollection* fc)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// Set default values</span></span><br><span class="line">    <span class="type">int</span> nbGroups&#123;<span class="number">1</span>&#125;;</span><br><span class="line">    <span class="type">float</span> epsilon&#123;<span class="number">0.00001F</span>&#125;;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; fc-&gt;nbFields; i++)   <span class="comment">//遍历解析</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="function">std::string <span class="title">field_name</span><span class="params">(fc-&gt;fields[i].name)</span></span>;</span><br><span class="line">        <span class="keyword">if</span> (field_name.<span class="built_in">compare</span>(<span class="string">&quot;eps&quot;</span>) == <span class="number">0</span>)  <span class="comment">//fields中的name是字符串</span></span><br><span class="line">        &#123;</span><br><span class="line">            epsilon = *<span class="built_in">static_cast</span>&lt;<span class="type">const</span> <span class="type">float</span>*&gt;(fc-&gt;fields[i].data);<span class="comment">//data是void* 类型，需要转为数值</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (field_name.<span class="built_in">compare</span>(<span class="string">&quot;num_groups&quot;</span>) == <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            nbGroups = *<span class="built_in">static_cast</span>&lt;<span class="type">const</span> <span class="type">int</span>*&gt;(fc-&gt;fields[i].data);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    GroupNormalizationPlugin* plugin = <span class="keyword">new</span> <span class="built_in">GroupNormalizationPlugin</span>(epsilon, nbGroups);</span><br><span class="line">    plugin-&gt;<span class="built_in">setPluginNamespace</span>(mNamespace.<span class="built_in">c_str</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plugin;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>fields结构体如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">PluginFieldCollection</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">//! Number of PluginField entries.</span></span><br><span class="line">    <span class="type">int32_t</span> nbFields;</span><br><span class="line">    <span class="comment">//! Pointer to PluginField entries.</span></span><br><span class="line">    PluginField <span class="type">const</span>* fields;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PluginField</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    AsciiChar <span class="type">const</span>* name;</span><br><span class="line">    <span class="type">void</span> <span class="type">const</span>* data;</span><br><span class="line">    PluginFieldType type;</span><br><span class="line">    <span class="type">int32_t</span> length;</span><br><span class="line">    <span class="built_in">PluginField</span>(AsciiChar <span class="type">const</span>* <span class="type">const</span> name_ = <span class="literal">nullptr</span>, <span class="type">void</span> <span class="type">const</span>* <span class="type">const</span> data_ = <span class="literal">nullptr</span>,</span><br><span class="line">        PluginFieldType <span class="type">const</span> type_ = PluginFieldType::kUNKNOWN, <span class="type">int32_t</span> <span class="type">const</span> length_ = <span class="number">0</span>) <span class="keyword">noexcept</span></span><br><span class="line">        : <span class="built_in">name</span>(name_)</span><br><span class="line">        , <span class="built_in">data</span>(data_)</span><br><span class="line">        , <span class="built_in">type</span>(type_)</span><br><span class="line">        , <span class="built_in">length</span>(length_)</span><br><span class="line">    &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反序列化，data就是需要解析出来的数据，length是总长度</span></span><br><span class="line"><span class="function">IPluginV2DynamicExt* <span class="title">GroupNormalizationPluginCreator::deserializePlugin</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* name, <span class="type">const</span> <span class="type">void</span>* serialData, <span class="type">size_t</span> serialLength)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    GroupNormalizationPlugin* plugin = <span class="keyword">new</span> <span class="built_in">GroupNormalizationPlugin</span>(serialData, serialLength);</span><br><span class="line">    plugin-&gt;<span class="built_in">setPluginNamespace</span>(mNamespace.<span class="built_in">c_str</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> plugin;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/TensorRT%E6%8F%92%E4%BB%B6/" rel="tag"># TensorRT插件</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/08/09/TensorRT%E6%8F%92%E4%BB%B6%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B%E5%9F%BA%E4%BA%8ETensorRT8-1/" rel="prev" title="TensorRT插件基础教程基于TensorRT8[1]">
+      <i class="fa fa-chevron-left"></i> TensorRT插件基础教程基于TensorRT8[1]
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TensorRT%E6%8F%92%E4%BB%B6%E9%9B%B6%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B%EF%BC%882%EF%BC%89%EF%BC%88%E5%9F%BA%E4%BA%8ETensorRT8%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">TensorRT插件零基础教程（2）（基于TensorRT8）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%86%99%E5%9C%A8%E5%89%8D%E9%9D%A2"><span class="nav-number">1.1.</span> <span class="nav-text">一、写在前面</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.1.0.1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E5%AE%8C%E6%9C%AC%E7%AF%87%EF%BC%8C%E4%BD%A0%E5%B0%86%E8%8E%B7%E5%BE%97"><span class="nav-number">1.1.0.2.</span> <span class="nav-text">读完本篇，你将获得</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%AD%A5%E5%85%A5%E6%AD%A3%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">二、步入正题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1%E3%80%81%E5%AE%9A%E4%B9%89%E6%B4%BE%E7%94%9F%E7%9A%84%E6%8F%92%E4%BB%B6%E7%B1%BB"><span class="nav-number">1.2.0.1.</span> <span class="nav-text">1、定义派生的插件类</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2%E3%80%81%E4%B8%A4%E4%B8%AA%E6%8F%92%E4%BB%B6%E5%86%85%E5%85%B7%E4%BD%93%E6%88%90%E5%91%98%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">1.2.0.2.</span> <span class="nav-text">2、两个插件内具体成员的定义</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Lin Yu"
+      src="/images/logo-yu.gif">
+  <p class="site-author-name" itemprop="name">Lin Yu</p>
+  <div class="site-description" itemprop="description">深度学习 目标跟踪 神经网络 TensorRT yolo</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lin Yu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
