@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/web-logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/web-logo.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.super-yu.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="CUDA编程笔记：简明扼要-2这是一篇关于CUDA编程高级概念的笔记FROM：CUDA Teaching Center Oklahoma State UniversityNote：本教程并不过多关注细节语法等内容，而是站在更高层次的概念之中。熟练的掌握CUDA编程需要练习，然而对基础概念的把握却需要透彻的理解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA编程笔记：简明扼要-2">
+<meta property="og:url" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/index.html">
+<meta property="og:site_name" content="Super雨">
+<meta property="og:description" content="CUDA编程笔记：简明扼要-2这是一篇关于CUDA编程高级概念的笔记FROM：CUDA Teaching Center Oklahoma State UniversityNote：本教程并不过多关注细节语法等内容，而是站在更高层次的概念之中。熟练的掌握CUDA编程需要练习，然而对基础概念的把握却需要透彻的理解。">
+<meta property="og:locale">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/9ffaa74d503063fcc5adb426381ef1bd.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/878a30b5af232e4696ac315778c29146.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/3b2d39192c5e3b14d7c6e82f7c9c3bde.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/1acd56be2f94c43aa67a0f5dc4443e88.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/1a9af1ef9f999fbff5335d2bc2ec63a0.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/28d88a8db99a1ffa2d8e1f5ac43f0fe5.png">
+<meta property="article:published_time" content="2022-08-09T09:04:17.000Z">
+<meta property="article:modified_time" content="2022-08-09T09:12:13.255Z">
+<meta property="article:author" content="Lin Yu">
+<meta property="article:tag" content="CUDA C++">
+<meta property="article:tag" content="异构编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/9ffaa74d503063fcc5adb426381ef1bd.png">
+
+<link rel="canonical" href="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>CUDA编程笔记：简明扼要-2 | Super雨</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Super雨</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">其实没有那么多观众，大胆地自由地生活！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/logo-yu.gif">
+      <meta itemprop="name" content="Lin Yu">
+      <meta itemprop="description" content="深度学习 目标跟踪 神经网络 TensorRT yolo">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Super雨">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA编程笔记：简明扼要-2
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-08-09 09:04:17 / Modified: 09:12:13" itemprop="dateCreated datePublished" datetime="2022-08-09T09:04:17+00:00">2022-08-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CUDA/" itemprop="url" rel="index"><span itemprop="name">CUDA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="CUDA编程笔记：简明扼要-2"><a href="#CUDA编程笔记：简明扼要-2" class="headerlink" title="CUDA编程笔记：简明扼要-2"></a>CUDA编程笔记：简明扼要-2</h1><p>这是一篇关于CUDA编程高级概念的笔记<br>FROM：CUDA Teaching Center Oklahoma State University<br>Note：本教程并不过多关注细节语法等内容，而是站在更高层次的概念之中。熟练的掌握CUDA编程需要练习，然而对基础概念的把握却需要透彻的理解。</p>
+<span id="more"></span>
+<h1 id="Part-2：编程模型（Programming-Model）"><a href="#Part-2：编程模型（Programming-Model）" class="headerlink" title="Part 2：编程模型（Programming Model）"></a>Part 2：编程模型（Programming Model）</h1><h2 id="程序流"><a href="#程序流" class="headerlink" title="程序流"></a>程序流</h2><p>在这一部分，将展示CUDA程序是如何在代码中组织的，需要知道重要的一点：CPU处于控制状态，即：Host控制着程序的整个流程，程序的流程就像一个普通的C程序一样，从main函数开始，直到需要uploadGPU代码的部分。</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/9ffaa74d503063fcc5adb426381ef1bd.png" alt="descript"></p>
+<p>kernel函数启动之后，线程以Grid为单位在GPU执行，kernel函数开始执行之后，程序立即返回到主机继续执行（言外之意：主机并不等待GPU执行完毕），直到遇见另一段GPU代码。</p>
+<p>注意：因为主机的main<br>C函数并不等待内核函数执行完毕，所以，如果要收集特定内核执行的结果，我们需要在主机代码中显式地制造一个barrier（屏障）来告诉mian<br>C函数等待内核执行完毕，后续详细介绍。</p>
+<h2 id="核函数（kernel）启动的语法"><a href="#核函数（kernel）启动的语法" class="headerlink" title="核函数（kernel）启动的语法"></a>核函数（kernel）启动的语法</h2><p>核函数的启动就像调用普通的C函数一样，核函数的名称写在前边，参数写在后边的括号里，唯一的不同是，需要在三个尖括号内配置启动的内核的Grid和Block<br>Dimension。</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/878a30b5af232e4696ac315778c29146.png" alt="descript"></p>
+<p>grid_size和block_size是dim3类型的参数，dim3是CUDA的数据结构类型，是一组整数，用于描述块和网格的尺寸。</p>
+<h2 id="Launch-Kernel（启动核函数）"><a href="#Launch-Kernel（启动核函数）" class="headerlink" title="Launch Kernel（启动核函数）"></a>Launch Kernel（启动核函数）</h2><p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/3b2d39192c5e3b14d7c6e82f7c9c3bde.png" alt="descript"></p>
+<h2 id="更细致观察程序流程"><a href="#更细致观察程序流程" class="headerlink" title="更细致观察程序流程"></a>更细致观察程序流程</h2><p>由于CPU与GPU并不共享内存，在执行核函数过程中伴随着数据的传输与copy，流程如下：</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/1acd56be2f94c43aa67a0f5dc4443e88.png" alt="descript"></p>
+<p><strong>注意</strong>：在Launch<br>Kernel这一步骤，伴随着数据从DRAM到各grid（或者说thread）的流动。</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/1a9af1ef9f999fbff5335d2bc2ec63a0.png" alt="descript"></p>
+<p><strong>注意</strong>：由于数据从Host到Device的拷贝经由PCI-e总线，所以速度很慢，这一点是限制性能的主要原因。</p>
+<h2 id="分配Device内存"><a href="#分配Device内存" class="headerlink" title="分配Device内存"></a>分配Device内存</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//在cuda中分配内存</span></span><br><span class="line"><span class="built_in">cudaMalloc</span>(LOCATION,SIZE)</span><br><span class="line"><span class="comment">//LOCATION:address</span></span><br><span class="line"><span class="comment">//SIZE:要分配的字节个数</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//在cuda中释放内存</span></span><br><span class="line"><span class="built_in">cudaFree</span>()</span><br></pre></td></tr></table></figure>
+
+<h2 id="数据在Host与Device之间的双向拷贝"><a href="#数据在Host与Device之间的双向拷贝" class="headerlink" title="数据在Host与Device之间的双向拷贝"></a>数据在Host与Device之间的双向拷贝</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cudaMemcpy</span>(dst,src,numBytes,direction)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>numBytes &#x3D; N*sizeof(type)</p>
+</li>
+<li><p>direction</p>
+<ul>
+<li><p>cudaMemcpyHostToDevice</p>
+</li>
+<li><p>cudaMemcpyDeviceToHost</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h2><p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2/28d88a8db99a1ffa2d8e1f5ac43f0fe5.png" alt="descript"></p>
+<p>注意：</p>
+<ul>
+<li>有一个（void**）&amp;，这一句的含义解释：</li>
+</ul>
+<blockquote>
+<p>  (void**)&amp;必须是本质上就是指针变量的地址才可以做这样的转换，并不是说把一个一级指针也可以转换，void**的本质是标识一个二级指针。&amp;data就是(默认数据类型**)&amp;data，(void**)&amp;data和&amp;data还是同一块内存，只不过数据类型发生变化了。在这里是为了吧数据类型变成void</p>
+</blockquote>
+<ul>
+<li>惯例：由于设备的指针和host混淆引用会导致程序崩溃，因而，在定义变量时候尽量明确，h_代表host变量，d_代表device变量。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CUDA-C/" rel="tag"># CUDA C++</a>
+              <a href="/tags/%E5%BC%82%E6%9E%84%E7%BC%96%E7%A8%8B/" rel="tag"># 异构编程</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-1/" rel="prev" title="CUDA编程笔记：简明扼要">
+      <i class="fa fa-chevron-left"></i> CUDA编程笔记：简明扼要
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-3/" rel="next" title="CUDA编程笔记：简明扼要-3">
+      CUDA编程笔记：简明扼要-3 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-2"><span class="nav-number">1.</span> <span class="nav-text">CUDA编程笔记：简明扼要-2</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part-2%EF%BC%9A%E7%BC%96%E7%A8%8B%E6%A8%A1%E5%9E%8B%EF%BC%88Programming-Model%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">Part 2：编程模型（Programming Model）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E6%B5%81"><span class="nav-number">2.1.</span> <span class="nav-text">程序流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%87%BD%E6%95%B0%EF%BC%88kernel%EF%BC%89%E5%90%AF%E5%8A%A8%E7%9A%84%E8%AF%AD%E6%B3%95"><span class="nav-number">2.2.</span> <span class="nav-text">核函数（kernel）启动的语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Launch-Kernel%EF%BC%88%E5%90%AF%E5%8A%A8%E6%A0%B8%E5%87%BD%E6%95%B0%EF%BC%89"><span class="nav-number">2.3.</span> <span class="nav-text">Launch Kernel（启动核函数）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E7%BB%86%E8%87%B4%E8%A7%82%E5%AF%9F%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B"><span class="nav-number">2.4.</span> <span class="nav-text">更细致观察程序流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8DDevice%E5%86%85%E5%AD%98"><span class="nav-number">2.5.</span> <span class="nav-text">分配Device内存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%9C%A8Host%E4%B8%8EDevice%E4%B9%8B%E9%97%B4%E7%9A%84%E5%8F%8C%E5%90%91%E6%8B%B7%E8%B4%9D"><span class="nav-number">2.6.</span> <span class="nav-text">数据在Host与Device之间的双向拷贝</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">2.7.</span> <span class="nav-text">例子</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Lin Yu"
+      src="/images/logo-yu.gif">
+  <p class="site-author-name" itemprop="name">Lin Yu</p>
+  <div class="site-description" itemprop="description">深度学习 目标跟踪 神经网络 TensorRT yolo</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lin Yu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

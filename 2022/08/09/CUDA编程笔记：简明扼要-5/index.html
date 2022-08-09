@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/web-logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/web-logo.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.super-yu.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="CUDA编程笔记：简明扼要-5这是一篇关于CUDA编程高级概念的笔记FROM：CUDA Teaching Center Oklahoma State UniversityNote：本教程并不过多关注细节语法等内容，而是站在更高层次的概念之中。熟练的掌握CUDA编程需要练习，然而对基础概念的把握却需要透彻的理解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA编程笔记：简明扼要-5">
+<meta property="og:url" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/index.html">
+<meta property="og:site_name" content="Super雨">
+<meta property="og:description" content="CUDA编程笔记：简明扼要-5这是一篇关于CUDA编程高级概念的笔记FROM：CUDA Teaching Center Oklahoma State UniversityNote：本教程并不过多关注细节语法等内容，而是站在更高层次的概念之中。熟练的掌握CUDA编程需要练习，然而对基础概念的把握却需要透彻的理解。">
+<meta property="og:locale">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/D8w7JjjVuATfqHNHn7b-QA.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/sYShXrfNx2D8ew1795SEAQ.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/70acc0ca7e6eb1805663facd05fb237c.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/445c78387558d2f8d7d2b86371e6616b.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/m5NIrN8L-0KmwHzalIp55w.pngw=1280&h=689.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/272b8a4d82d6e91a4c309a8f52bd0d7d.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/d6067d18a88d49e853fdfb4003787cbe.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/9f945c1f0d82bcbe3ad554a07fefaccf.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/251eb88c73d1e4d442056f51413348bd.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/4129f52711ae2acfdb796fac912a5b5c.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/3dbbd77ffe6705700cba7fc55274098c.png">
+<meta property="og:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/490a77cba80501aa06d39a6a1a5c313c.png">
+<meta property="article:published_time" content="2022-08-09T09:04:32.000Z">
+<meta property="article:modified_time" content="2022-08-09T09:12:43.035Z">
+<meta property="article:author" content="Lin Yu">
+<meta property="article:tag" content="CUDA C++">
+<meta property="article:tag" content="异构编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/D8w7JjjVuATfqHNHn7b-QA.png">
+
+<link rel="canonical" href="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>CUDA编程笔记：简明扼要-5 | Super雨</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Super雨</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">其实没有那么多观众，大胆地自由地生活！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="https://www.super-yu.com/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/logo-yu.gif">
+      <meta itemprop="name" content="Lin Yu">
+      <meta itemprop="description" content="深度学习 目标跟踪 神经网络 TensorRT yolo">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Super雨">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CUDA编程笔记：简明扼要-5
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-08-09 09:04:32 / Modified: 09:12:43" itemprop="dateCreated datePublished" datetime="2022-08-09T09:04:32+00:00">2022-08-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CUDA/" itemprop="url" rel="index"><span itemprop="name">CUDA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="CUDA编程笔记：简明扼要-5"><a href="#CUDA编程笔记：简明扼要-5" class="headerlink" title="CUDA编程笔记：简明扼要-5"></a>CUDA编程笔记：简明扼要-5</h1><p>这是一篇关于CUDA编程高级概念的笔记<br>FROM：CUDA Teaching Center Oklahoma State University<br>Note：本教程并不过多关注细节语法等内容，而是站在更高层次的概念之中。熟练的掌握CUDA编程需要练习，然而对基础概念的把握却需要透彻的理解。</p>
+<span id="more"></span>
+<h1 id="Part5-CUDA内存模型"><a href="#Part5-CUDA内存模型" class="headerlink" title="Part5 : CUDA内存模型"></a>Part5 : CUDA内存模型</h1><p>CUDA提出了分区内存空间的概念，以向程序员展示不同层次的并行性和性能。这一点是与C编程的一个大区别。</p>
+<p>内存模型也是一个抽象概念，它与线程的层次一一对应，也是有3个层次。</p>
+<h2 id="Thread与Memory的对应关系"><a href="#Thread与Memory的对应关系" class="headerlink" title="Thread与Memory的对应关系"></a>Thread与Memory的对应关系</h2><ul>
+<li><p>Thread <strong>⇔ Local</strong> Memory(and Regesters)</p>
+<ul>
+<li><p>scope：Pritive to its corresponding Thread</p>
+</li>
+<li><p>Lifetime: Thread</p>
+</li>
+<li><p>​                 <img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/D8w7JjjVuATfqHNHn7b-QA.png" alt="img"></p>
+</li>
+</ul>
+</li>
+</ul>
+<p>（注：local通常指的是DRAM的空间）</p>
+<p>每个线程都有自己的私有本地内存，当一个线程执行完毕之后，任何其他线程都无法访问该线程的内存空间，与该线程相关的任何本地内存都会被自动销毁。</p>
+<p>线程也有一些私有寄存器，这些寄存器与本地内存具有相同的范围（scope）和生命周期，但是性能特征却大相径庭。</p>
+<ul>
+<li><p>Blocks <strong>⇔ Shared</strong> Memory</p>
+<ul>
+<li><p>scope：Every Thread in the Block has access</p>
+</li>
+<li><p>Lifetime: Block</p>
+</li>
+<li><p>​                 <img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/sYShXrfNx2D8ew1795SEAQ.png" alt="img"></p>
+</li>
+</ul>
+</li>
+</ul>
+<p>该块内的所有线程，都可以访问这一块共享内存。</p>
+<ul>
+<li><p>Grids <strong>⇔</strong> Global Memory</p>
+<ul>
+<li><p>scope：Every Thread in all Grids have access</p>
+</li>
+<li><p>Lifetime: Entire program in Host code - main()</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>全局内存对于程序的所有线程都是可见的，持续存在于整个程序的生命周期，可以使用cudaFree手动销毁</p>
+<h2 id="物理Model"><a href="#物理Model" class="headerlink" title="物理Model"></a>物理Model</h2><p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/70acc0ca7e6eb1805663facd05fb237c.png" alt="descript"></p>
+<ul>
+<li><p>黄色的矩形代表SM’s</p>
+<ul>
+<li>理解block如何映射到SM上是编写kenel函数从GPU获取最佳性能的基础</li>
+</ul>
+</li>
+</ul>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/445c78387558d2f8d7d2b86371e6616b.png" alt="descript"></p>
+<ul>
+<li><p>位于SM上的内存称为on-chip（片上）内存</p>
+<ul>
+<li>share memory 、<br>regesrers，因为其物理上就存在于GPU上（准确的说是存在于GPU的SM上）</li>
+</ul>
+</li>
+<li><p>不在SM上的内存称为off-chip（片外）内存</p>
+<ul>
+<li><p>Global memory 、local<br>memory，因为其物理上不在GPU芯片上，而是存在于GPU板卡上，位于GPU芯片外围（详细见下图）</p>
+</li>
+<li><p>​                 <img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/m5NIrN8L-0KmwHzalIp55w.pngw=1280&h=689.png" alt="img">     </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">有一个混淆概念：GPU说的是GPU芯片本身，但有时候代指GPU板卡。在讨论细节时候，我们认为其是GPU芯片，在生活中或宏观上，我们认为GPU就是GPU板卡。</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h2 id="不同存储的速度"><a href="#不同存储的速度" class="headerlink" title="不同存储的速度"></a>不同存储的速度</h2><p>相对速度如下，此处的速度指的是，综合考虑带宽与延迟的相对速度。</p>
+<p>不同的内存类型设计目的也不一样，由于其物理设计不同，每种内存有着截然不同用的带宽和延迟。</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/272b8a4d82d6e91a4c309a8f52bd0d7d.png" alt="descript"></p>
+<h2 id="Global-Memory"><a href="#Global-Memory" class="headerlink" title="Global Memory"></a>Global Memory</h2><p>访问函数接口：</p>
+<ul>
+<li><p>cudaMalloc（）</p>
+</li>
+<li><p>cudaMenset（）</p>
+</li>
+<li><p>cudaMenCopy（）</p>
+</li>
+<li><p>cudaFree（）</p>
+</li>
+</ul>
+<p>全局内存是我们最熟悉的内存，当使用cudaMalloc函数分配内存时，得到的就是这个区域的内存。由于这片内存在外部的DRAM上，他表现出很慢的（very<br>slow）内存性能，但是我们不可避免的使用这一片内存，因为我们需要在主机和设备之间交换数据。</p>
+<p>受此启发，我们的目标就是尽可能减小这一片内存的数据流量。但是他也有一个好处，他的空间比较大，与计算机的RAM相当，通常是8GB<br>or 16GB，Titan和Tesla K40现在（2018左右吧）都有6GB的global DRAM。</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/d6067d18a88d49e853fdfb4003787cbe.png" alt="descript"></p>
+<p>注意：这张图的一个关键是：host与GPU的数据交换通常以Global Memory作为中转站</p>
+<h2 id="Regesters-and-Local-Memory"><a href="#Regesters-and-Local-Memory" class="headerlink" title="Regesters and Local Memory"></a>Regesters and Local Memory</h2><p>前面已经说过，每一个线程都有自己的Regesters和Local<br>memory，其他任何线程都无法访问。</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/9f945c1f0d82bcbe3ad554a07fefaccf.png" alt="descript"></p>
+<ul>
+<li><p>内核中声明的任何变量都存储于寄存器</p>
+<ul>
+<li><p>片内的</p>
+</li>
+<li><p>寄存器是最快的存储类型</p>
+</li>
+</ul>
+</li>
+<li><p>如果存储的内容太大，将会溢出到Local memory</p>
+<ul>
+<li><p>片外的</p>
+</li>
+<li><p>由编译器控制</p>
+</li>
+<li><p>local指的是scope（可见范围），而不是location（位置）</p>
+</li>
+<li><p>local to each thread</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>但是，溢出到Local memory通常不受欢迎，因为local<br>memory是最慢的存储区域之一。所以，尽可能不要放置超过regester空间大小的数据。寄存器空间是一种稀缺的硬件资源，<em>要关注如何更好的利用这部分资源。</em></p>
+<h2 id="Shared-Memory"><a href="#Shared-Memory" class="headerlink" title="Shared Memory"></a>Shared Memory</h2><p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/251eb88c73d1e4d442056f51413348bd.png" alt="descript"></p>
+<ul>
+<li><p>Allow Threads within a Block to communicate with each other</p>
+<ul>
+<li>Use synchronization</li>
+</ul>
+</li>
+<li><p>Very fast （on chip）</p>
+<ul>
+<li>Only regesters are faster</li>
+</ul>
+</li>
+</ul>
+<p>共享内存是一种非常特殊的内存空间，对性能和正确性至关重要。从某种意义上说，这片空间是用户定义的一级缓存（实际上它与一级缓存有着千丝万缕的联系）</p>
+<h3 id="Using-Shared-Memory"><a href="#Using-Shared-Memory" class="headerlink" title="Using Shared Memory"></a>Using Shared Memory</h3><p>下面的代码展示了如何在共享内存中声明变量，使用share关键字：</p>
+<p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/4129f52711ae2acfdb796fac912a5b5c.png" alt="descript"></p>
+<h2 id="Constant-Memory"><a href="#Constant-Memory" class="headerlink" title="Constant Memory"></a>Constant Memory</h2><p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/3dbbd77ffe6705700cba7fc55274098c.png" alt="descript"></p>
+<p>注意：第二个箭头是单向的</p>
+<ul>
+<li><p>Device存储空间的特殊区域</p>
+<ul>
+<li><p>用于保存内核函数执行时候的不变内容</p>
+</li>
+<li><p>只读</p>
+</li>
+</ul>
+</li>
+<li><p>片外</p>
+</li>
+<li><p>常量内存is aggressively cached into On-Chip menory</p>
+</li>
+</ul>
+<p>这是一个没有相对应的层次的存储空间。由于GPU没有特别大的缓存（这一点与CPU对比很明显），我们可以使用常量空间实现一种很简单的缓存。</p>
+<p>常量空间实际上他比较大，因为他位于DRAM，所有线程都可以访问他，但他对于kernel来说，是只读的。我们希望把这部分空间用于保存<strong>经常访问但在内核执行期间不变的</strong>的数据。尽管他是片外的，但他的内容实际上被<strong>积极的</strong>缓存（搬运）到片上内存之中.</p>
+<p>所以，使用常量空间可以<strong>显著减少</strong>global存储的数据流量</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><img src="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5/490a77cba80501aa06d39a6a1a5c313c.png" alt="descript"></p>
+<p>从最低层按照一个程序员的眼光来看，我们拥有寄存器和Local Memory，在核函数内声明的变量都存储与寄存器当中，如果过大，将会溢出到Local Memory，但这是不可取的，因为Local Memory位于片外。</p>
+<p>共享内存比较特殊，原因之一是他具有极其快的速度，这一点由片上特性决定；另一点是他允许同一block中的线程进行communicate</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CUDA-C/" rel="tag"># CUDA C++</a>
+              <a href="/tags/%E5%BC%82%E6%9E%84%E7%BC%96%E7%A8%8B/" rel="tag"># 异构编程</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-4/" rel="prev" title="CUDA编程笔记：简明扼要-4">
+      <i class="fa fa-chevron-left"></i> CUDA编程笔记：简明扼要-4
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/08/09/CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-6/" rel="next" title="CUDA编程笔记：简明扼要-6">
+      CUDA编程笔记：简明扼要-6 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CUDA%E7%BC%96%E7%A8%8B%E7%AC%94%E8%AE%B0%EF%BC%9A%E7%AE%80%E6%98%8E%E6%89%BC%E8%A6%81-5"><span class="nav-number">1.</span> <span class="nav-text">CUDA编程笔记：简明扼要-5</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Part5-CUDA%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">Part5 : CUDA内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Thread%E4%B8%8EMemory%E7%9A%84%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB"><span class="nav-number">2.1.</span> <span class="nav-text">Thread与Memory的对应关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%A9%E7%90%86Model"><span class="nav-number">2.2.</span> <span class="nav-text">物理Model</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E5%AD%98%E5%82%A8%E7%9A%84%E9%80%9F%E5%BA%A6"><span class="nav-number">2.3.</span> <span class="nav-text">不同存储的速度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Global-Memory"><span class="nav-number">2.4.</span> <span class="nav-text">Global Memory</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Regesters-and-Local-Memory"><span class="nav-number">2.5.</span> <span class="nav-text">Regesters and Local Memory</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Shared-Memory"><span class="nav-number">2.6.</span> <span class="nav-text">Shared Memory</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Using-Shared-Memory"><span class="nav-number">2.6.1.</span> <span class="nav-text">Using Shared Memory</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Constant-Memory"><span class="nav-number">2.7.</span> <span class="nav-text">Constant Memory</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">2.8.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Lin Yu"
+      src="/images/logo-yu.gif">
+  <p class="site-author-name" itemprop="name">Lin Yu</p>
+  <div class="site-description" itemprop="description">深度学习 目标跟踪 神经网络 TensorRT yolo</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lin Yu</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
